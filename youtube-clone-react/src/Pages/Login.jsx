@@ -4,6 +4,7 @@ import Button from "react-bootstrap/Button";
 import Container from "react-bootstrap/Container";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../AuthContext";
+import AuthPage from "./AuthPage";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -22,6 +23,7 @@ export default function Login() {
 
   return (
     <Container>
+      <AuthPage />
       <h1 className="my-3">Login to your account</h1>
       <Form onSubmit={e => { e.preventDefault(); login(); }}>
         <Form.Group className="mb-3" controlId="username">

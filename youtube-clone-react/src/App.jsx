@@ -7,13 +7,16 @@ import { AuthContext } from "./AuthContext";
 import RequireAuth from "./Components/Authorization/RequireAuth";
 import useLocalStorage from "use-local-storage";
 import Login from "./Pages/Login";
+import AuthPage from "./Pages/AuthPage";
 
 const App = () => {
+  
   const [token, setToken] = useLocalStorage("token", null);
   const authContextValue = { token, setToken };
   const [sidebar, setSidebar] = useState(true);
 
   return (
+    
     <AuthContext.Provider value={authContextValue}>
       <Navbar setSidebar={setSidebar} />
       <Routes>
@@ -36,7 +39,10 @@ const App = () => {
         />
       </Routes>
     </AuthContext.Provider>
+    
   );
 };
 
 export default App;
+
+ 
