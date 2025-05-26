@@ -1,48 +1,33 @@
 import React, { useState } from "react";
+import { BrowserRouter, Route, Routes } from "react-router-dom"; // Import BrowserRouter
 import Navbar from "./Components/Navbar/Navbar";
-import { Route, Routes } from "react-router-dom";
 import Home from "./Pages/Home/Home";
 import Video from "./Pages/Video/Video";
-import { AuthContext } from "./AuthContext";
-import RequireAuth from "./Components/Authorization/RequireAuth";
 import useLocalStorage from "use-local-storage";
-import Login from "./Pages/Login";
 import AuthPage from "./Pages/AuthPage";
+import ProfilePage from "./Pages/ProfilePage";
+import { AuthProvider } from "./Components/AuthProvider";
+import store from "./store";
+import { Provider } from "react-redux";
 
 const App = () => {
-  
   const [token, setToken] = useLocalStorage("token", null);
-  const authContextValue = { token, setToken };
   const [sidebar, setSidebar] = useState(true);
 
   return (
-    
-    <AuthContext.Provider value={authContextValue}>
-      <Navbar setSidebar={setSidebar} />
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <RequireAuth>
-              <Home sidebar={sidebar} />
-            </RequireAuth>
-          }
-        />
-        <Route path="/login" element={<Login />} />
-        <Route
-          path="/video/:categoryId/:videoId"
-          element={
-            <RequireAuth>
-              <Video />
-            </RequireAuth>
-          }
-        />
-      </Routes>
-    </AuthContext.Provider>
-    
+    <AuthProvider>
+      <Provider store={store}>
+          <Navbar setSidebar={setSidebar} />
+          <Routes>
+            <Route path="/" element={<Home sidebar={sidebar} />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/login" element={<AuthPage />} />
+            <Route path="/video/:categoryId/:videoId" element={<Video />} />
+          </Routes>
+      </Provider>
+    </AuthProvider>
   );
 };
 
 export default App;
 
- 
