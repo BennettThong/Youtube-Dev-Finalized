@@ -16,7 +16,7 @@ import {
 export default function AuthPage() {
   const loginImage = "https://i.postimg.cc/76XCk3Gk/original-0096017bd6b73372156147b678984ec5.webp";
   const url =
-    "http://localhost:5000";
+    "https://youtube-dev-backend.onrender.com";
 
   // Possible values: null (no modal shows), "Login", "SignUp"
   const [modalShow, setModalShow] = useState(null);

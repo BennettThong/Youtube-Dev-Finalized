@@ -8,10 +8,6 @@ import AuthPage from "./Pages/AuthPage";
 import ProfilePage from "./Pages/ProfilePage";
 import { AuthProvider } from "./Components/AuthProvider";
 
-export const apiUrl = import.meta.env.VITE_API_URL;
-
-
-
 const App = () => {
   const [token, setToken] = useLocalStorage("token", null);
   const [sidebar, setSidebar] = useState(true);
