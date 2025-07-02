@@ -1,150 +1,224 @@
+import { Button, Col, Image, Row, Modal, Form } from "react-bootstrap";
+import { useContext, useEffect, useState } from "react";
+import axios from "axios";
+import useLocalStorage from "use-local-storage";
+import { useNavigate } from "react-router-dom";
+import { jwtDecode } from 'jwt-decode';
+import { AuthContext } from "../Components/AuthProvider";
 import {
-    GoogleAuthProvider,
-    createUserWithEmailAndPassword,
-    getAuth,
-    signInWithEmailAndPassword,
-    signInWithPopup,
-  } from "firebase/auth";
-  import { useContext, useState } from "react";
-  import { Button, Col, Form, Image, Modal, Row } from "react-bootstrap";
-  import { AuthContext } from "../components/AuthProvider";
-  import { useNavigate } from "react-router-dom";
+  GoogleAuthProvider,
+  createUserWithEmailAndPassword,
+  getAuth,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+} from "firebase/auth";
 
-  export default function AuthPage() {
-    const loginImage = "https://i.postimg.cc/76XCk3Gk/original-0096017bd6b73372156147b678984ec5.webp";
-    // values: null (no modal show), "login", "signup"
-    const [modalShow, setModalShow] = useState(null);
-    const handleShowSignUp = () => setModalShow("signup");
-    const handleShowLogin = () => setModalShow("login");
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
-    const auth = getAuth();
-    const navigate = useNavigate();
-    const { currentUser } = useContext(AuthContext);
-    const provider = new GoogleAuthProvider();
+export default function AuthPage() {
+  const loginImage = "https://i.postimg.cc/76XCk3Gk/original-0096017bd6b73372156147b678984ec5.webp";
+  const url =
+    "http://localhost:5000";
 
-    if (currentUser) navigate("/");
+  // Possible values: null (no modal shows), "Login", "SignUp"
+  const [modalShow, setModalShow] = useState(null);
+  const handleShowSignUp = () => setModalShow("SignUp");
+  const handleShowLogin = () => setModalShow("Login");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [authToken, setAuthToken] = useLocalStorage("authToken", "");
+  const auth = getAuth();
+  const provider = new GoogleAuthProvider();
+  const navigate = useNavigate();
+  const { currentUser } = useContext(AuthContext)
 
-    const handleSignUp = async (e) => {
-      e.preventDefault();
-      try {
-        const res = await createUserWithEmailAndPassword(
-          auth,
-          username,
-          password
-        );
-        console.log(res.user);
-      } catch (error) {
-        console.error(error);
+
+  const handleGoogleLogin = async (e) => {
+    e.preventDefault();
+
+    try {
+      const result = await signInWithPopup(auth, provider);
+      console.log("✅ Google login success", result.user);
+
+      // Optional: Get Firebase token if needed
+      const token = await result.user.getIdToken();
+      localStorage.setItem("authToken", token);
+
+      // Navigate to homepage
+      navigate("/home");
+    } catch (error) {
+      console.error("❌ Google login error:", error.message);
+      alert("Google login failed: " + error.message);
+    }
+  };
+
+
+  useEffect(() => {
+    if (authToken) {
+      navigate("/home");
+    }
+  }, [authToken, navigate]);
+
+  const handleSignUp = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await axios.post(`${url}/signup`, { username, password });
+      console.log("✅ Signup success:", res.data);
+      alert("Account created successfully!");
+    } catch (error) {
+      if (error.response) {
+        // Backend responded with a status other than 2xx
+        console.error("❌ Signup failed:", error.response.data);
+        alert(error.response.data.error || "Signup failed");
+      } else if (error.request) {
+        // Request was made but no response received
+        console.error("❌ No response from server:", error.request);
+        alert("No response from the server. Check connection or backend.");
+      } else {
+        // Something went wrong in setting up the request
+        console.error("❌ Signup error:", error.message);
+        alert("Unexpected error: " + error.message);
       }
-    };
-    const handleLogin = async (e) => {
-      e.preventDefault();
-      try {
-        await signInWithEmailAndPassword(auth, username, password);
-      } catch (error) {
-        console.error(error);
+    }
+    try {
+      const res = await createUserWithEmailAndPassword(
+        auth,
+        username,
+        password
+      );
+      console.log(res.user);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+
+    // Try backend login first
+    try {
+      const res = await axios.post(`${url}/login`, { username, password });
+
+      if (res.data && res.data.auth === true && res.data.token) {
+        setAuthToken(res.data.token);
+
+        try {
+          const decoded = jwtDecode(res.data.token);
+          console.log("🧠 Logged in user (Backend):", decoded);
+        } catch (decodeErr) {
+          console.warn("⚠️ Token could not be decoded:", decodeErr.message);
+        }
+
+        return; // ✅ Stop here if backend login succeeds
       }
-    };
-    const handleGoogleLogin = async (e) => {
-      e.preventDefault();
-      try {
-        await signInWithPopup(auth, provider);
-      } catch (error) {
-        console.error(error);
-      }
-    };
+    } catch (error) {
+      console.warn("⚠️ Backend login failed, trying Firebase...");
+    }
 
-    const handleClose = () => setModalShow(null);
+    // If backend login fails, try Firebase
+    try {
+      await signInWithEmailAndPassword(auth, username, password);
+      console.log("✅ Firebase login success");
 
-    return (
-      <Row>
-        <Col sm={6}>
-          <Image src={loginImage} fluid />
-        </Col>
-        <Col sm={6} className="p-4">
-          <i
-            className="bi bi-youtube"
-            style={{ fontSize: 50, color: "red" }}
-          ></i>
+      // You could also generate a Firebase JWT token and store it:
+      const token = await auth.currentUser.getIdToken();
+      setAuthToken(token);
+    } catch (firebaseErr) {
+      console.error("❌ Firebase login failed:", firebaseErr.message);
+      alert("Login failed with both methods. Check credentials.");
+    }
+  };
 
-          <p className="mt-5" style={{ fontSize: 64 }}>
-            Youtube Premium
-          </p>
-          <h2 className="my-5" style={{ fontSize: 31 }}>
-            Join Youtube today.
-          </h2>
-          <Col sm={5} className="d-grid gap-2">
-            <Button
-              className="rounded-pill"
-              variant="outline-dark"
-              onClick={handleGoogleLogin}
-            >
-              <i className="bi bi-google"></i> Sign up with Google
-            </Button>
-            <Button className="rounded-pill" variant="outline-dark">
-              <i className="bi bi-apple"></i> Sign up with Apple
-            </Button>
-            <p style={{ textAlign: "center" }}>or</p>
-            <Button className="rounded-pill" onClick={handleShowSignUp}>
-              Create an account
-            </Button>
-            <p style={{ fontSize: "12px" }}> Agree to terms</p>
-            <p className="mt-5" style={{ fontWeight: "bold" }}>
-              Already have an account?
-            </p>
-            <Button
-              className="rounded-pill"
-              variant="outline-primary"
-              onClick={handleShowLogin}
-            >
-              Sign in
-            </Button>
-          </Col>
-          <Modal
-            show={modalShow !== null}
-            onHide={handleClose}
-            animation={false}
-            centered
+  const handleClose = () => setModalShow(null);
+  return (
+    <Row>
+      <Col sm={6}>
+        <Image src={loginImage} fluid />
+      </Col>
+      <Col sm={6} className="p-4">
+        <i
+          className="bi bi-twitter"
+          style={{ fontSize: 50, color: "dodgerblue" }}
+        ></i>
+
+        <p className="mt-5" style={{ fontSize: 64 }}>
+          Happening Now
+        </p>
+        <h2 className="my-5" style={{ fontSize: 31 }}>
+          Join Twitter today.
+        </h2>
+        <Col sm={5} className="d-grid gap-2">
+          <Button
+            className="rounded-pill"
+            variant="outline-dark"
+            onClick={handleGoogleLogin}
           >
-            <Modal.Body>
-              <h2 className="mb-4" style={{ fontWeight: "bold" }}>
-                {modalShow === "signup"
-                  ? "Create your account"
-                  : "Log in to your account"}
-              </h2>
+            <i className="bi bi-google"></i> Sign up with Google
+          </Button>
+          <Button className="rounded-pill" variant="outline-dark">
+            <i className="bi bi-apple"></i> Sign up with Apple
+          </Button>
+          <p style={{ textAlign: "center" }}>or</p>
+          <Button className="rounded-pill" onClick={handleShowSignUp}>
+            Create an account
+          </Button>
+          <p style={{ fontSize: "12px" }}>
+            By signing up, you agree to the Terms of Service and Privacy Policy,
+            including Cookie Use.
+          </p>
 
-              <Form
-                className="d-grid gap-2 px-5"
-                onSubmit={modalShow === "signup" ? handleSignUp : handleLogin}
-              >
-                <Form.Group className="mb-3" controlId="formBasicEmai">
-                  <Form.Control
-                    onChange={(e) => setUsername(e.target.value)}
-                    type="email"
-                    placeholder="Enter email"
-                  />
-                </Form.Group>
-
-                <Form.Group className="mb-3" controlId="formBasicPassword">
-                  <Form.Control
-                    onChange={(e) => setPassword(e.target.value)}
-                    type="password"
-                    placeholder="Password"
-                  />
-                </Form.Group>
-
-                <p style={{ fontSize: 12 }}>
-                  By signing up, you agree to the Terms of Service and Privacy
-
-                </p>
-                <Button className="rounded-pill" type="submit">
-                  {modalShow === "signup" ? "Sign up" : "Log in"}
-                </Button>
-              </Form>
-            </Modal.Body>
-          </Modal>
+          <p className="mt-5" style={{ fontWeight: "bold" }}>
+            Already have an account?
+          </p>
+          <Button
+            className="rounded-pill"
+            variant="outline-primary"
+            onClick={handleShowLogin}
+          >
+            Sign in
+          </Button>
         </Col>
-      </Row>
-    );
-  }
+        <Modal
+          show={modalShow !== null}
+          onHide={handleClose}
+          animation={false}
+          centered
+        >
+          <Modal.Body>
+            <h2 className="mb-4" style={{ fontWeight: "bold" }}>
+              {modalShow === "SignUp"
+                ? "Create your account"
+                : "Log in to your account"}
+            </h2>
+            <Form
+              className="d-grid gap-2 px-5"
+              onSubmit={modalShow === "SignUp" ? handleSignUp : handleLogin}
+            >
+              <Form.Group className="mb-3" controlId="formBasicEmail">
+                <Form.Control
+                  onChange={(e) => setUsername(e.target.value)}
+                  type="email"
+                  placeholder="Enter username"
+                />
+              </Form.Group>
+
+              <Form.Group className="mb-3" controlId="formBasicPassword">
+                <Form.Control
+                  onChange={(e) => setPassword(e.target.value)}
+                  type="password"
+                  placeholder="Password"
+                />
+              </Form.Group>
+              <p style={{ fontSize: "12px" }}>
+                By signing up, you agree to the Terms of Service and Privacy
+                Policy, including Cookie Use.
+              </p>
+
+              <Button className="rounded-pill" type="submit">
+                {modalShow === "SignUp" ? "Sign up" : "Log in"}
+              </Button>
+            </Form>
+          </Modal.Body>
+        </Modal>
+      </Col>
+    </Row >
+  );
+}
