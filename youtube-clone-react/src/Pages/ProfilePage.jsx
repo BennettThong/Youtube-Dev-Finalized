@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import useLocalStorage from "use-local-storage";
 import axios from "axios";
 
+const apiUrl = import.meta.env.VITE_API_URL; // ✅ dynamic backend URL
+
 export default function ProfilePage() {
   const [authToken, setAuthToken] = useLocalStorage("authToken", "");
   const navigate = useNavigate();
@@ -12,8 +14,6 @@ export default function ProfilePage() {
   );
   const [previewImage, setPreviewImage] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
-
-  const backendUrl = "http://localhost:5000"; // 🔁 replace with production URL if deployed
 
   useEffect(() => {
     if (!authToken) navigate("/login");
@@ -43,10 +43,10 @@ export default function ProfilePage() {
     formData.append("image", selectedFile);
 
     try {
-      const res = await axios.post(`${backendUrl}/upload-profile`, formData, {
+      const res = await axios.post(`${apiUrl}/upload-profile`, formData, {
         headers: {
-          "Content-Type": "multipart/form-data",
-        },
+          "Content-Type": "multipart/form-data"
+        }
       });
 
       if (res.data && res.data.imageUrl) {
@@ -91,7 +91,7 @@ export default function ProfilePage() {
               height: "150px",
               borderRadius: "50%",
               objectFit: "cover",
-              border: "2px solid #ddd",
+              border: "2px solid #ddd"
             }}
           />
         </div>
@@ -121,7 +121,7 @@ export default function ProfilePage() {
         className="w-100 px-4 py-5"
         style={{
           backgroundColor: "#9de2ff",
-          borderRadius: ".5rem .5rem 0 0",
+          borderRadius: ".5rem .5rem 0 0"
         }}
       >
         <div className="row d-flex justify-content-center">
