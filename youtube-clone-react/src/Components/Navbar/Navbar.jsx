@@ -6,13 +6,17 @@ import search_icon from '../../assets/search.png'
 import upload_icon from '../../assets/upload.png'
 import more_icon from '../../assets/more.png'
 import notification_icon from '../../assets/notification.png'
-import jack_img from '../../assets/jack.png'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 const Navbar = ({ setSidebar }) => {
+    const navigate = useNavigate();
 
-    const sidebar_toggle = (e) => {
-        setSidebar((prev) => prev === false ? true : false);
+    const sidebar_toggle = () => {
+        setSidebar((prev) => !prev);
+    }
+
+    const handleClick = () => {
+        navigate("/profile");
     }
 
     return (
@@ -31,7 +35,15 @@ const Navbar = ({ setSidebar }) => {
                 <img src={upload_icon} alt="" />
                 <img src={more_icon} alt="" />
                 <img src={notification_icon} alt="" />
-                <img src={`https://ui-avatars.com/api/?name=Bennett+Thong`} alt="ProfilePic" className="user-icon" />
+
+                {/* ✅ Make profile image clickable */}
+                <div onClick={handleClick} style={{ cursor: "pointer" }}>
+                    <img
+                        src={`https://ui-avatars.com/api/?name=Bennett+Thong`}
+                        alt="ProfilePic"
+                        className="user-icon"
+                    />
+                </div>
             </div>
         </nav>
     )
