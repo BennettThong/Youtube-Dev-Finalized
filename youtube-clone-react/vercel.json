@@ -1,0 +1,42 @@
+{
+  "rewrites": [
+    {
+      "source": "/signup",
+      "destination": "https://youtube-dev-backend.onrender.com/signup"
+    },
+    {
+      "source": "/login",
+      "destination": "https://youtube-dev-backend.onrender.com/login"
+    },
+    {
+      "source": "/upload-profile",
+      "destination": "https://youtube-dev-backend.onrender.com/upload-profile"
+    },
+    {
+      "source": "/posts",
+      "destination": "https://youtube-dev-backend.onrender.com/posts"
+    },
+    {
+      "source": "/likes",
+      "destination": "https://youtube-dev-backend.onrender.com/likes"
+    },
+    {
+      "source": "/likes/:id",
+      "destination": "https://youtube-dev-backend.onrender.com/likes/:id"
+    },
+    {
+      "source": "/likes/post/:post_id",
+      "destination": "https://youtube-dev-backend.onrender.com/likes/post/:post_id"
+    },
+    {
+      "source": "/health",
+      "destination": "https://youtube-dev-backend.onrender.com/health"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+}
