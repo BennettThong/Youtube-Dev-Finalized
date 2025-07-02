@@ -32,4 +32,5 @@
       "source": "/health",
       "destination": "https://youtube-dev-backend.onrender.com/health"
     }
+  ],
 }
