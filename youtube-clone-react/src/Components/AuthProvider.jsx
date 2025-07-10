@@ -7,22 +7,19 @@ export const AuthContext = createContext();
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [authSource, setAuthSource] = useState(null); // "firebase" | "jwt" | null
+  const [profileImage, setProfileImage] = useState(localStorage.getItem("profileImage") || ""); // ✅ store image globally
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
-        // ✅ Firebase login
         setCurrentUser(firebaseUser);
         setAuthSource("firebase");
-        setLoading(false);
       } else {
-        // ✅ Fallback to backend JWT
         const token = localStorage.getItem("backendAuthToken");
 
         if (token) {
           try {
-            // ✅ Validate token structure: must be 3-part JWT
             if (token.split(".").length !== 3) {
               throw new Error("Invalid JWT format");
             }
@@ -40,16 +37,23 @@ export function AuthProvider({ children }) {
           setCurrentUser(null);
           setAuthSource(null);
         }
-
-        setLoading(false);
       }
+
+      setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
 
   return (
-    <AuthContext.Provider value={{ currentUser, authSource }}>
+    <AuthContext.Provider
+      value={{
+        currentUser,
+        authSource,
+        profileImage,     // ✅ global profile image
+        setProfileImage,  // ✅ setter for /profile page to update
+      }}
+    >
       {!loading && children}
     </AuthContext.Provider>
   );

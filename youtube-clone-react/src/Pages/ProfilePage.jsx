@@ -8,11 +8,11 @@ import { getAuth, signOut } from "firebase/auth";
 const apiUrl = import.meta.env.VITE_API_URL;
 
 export default function ProfilePage() {
-  const { currentUser, authSource } = useContext(AuthContext); // ✅ currentUser from context
+  const { currentUser, authSource, setProfileImage } = useContext(AuthContext); // ✅ Added setProfileImage
   const navigate = useNavigate();
 
   const [image, setImage] = useState(
-    "https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-profiles/avatar-1.webp"
+    "https://ui-avatars.com/api/?name=Bennett+Thong"
   );
   const [previewImage, setPreviewImage] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -65,6 +65,7 @@ export default function ProfilePage() {
       if (res.data && res.data.imageUrl) {
         setImage(res.data.imageUrl);
         localStorage.setItem("profileImage", res.data.imageUrl);
+        setProfileImage(res.data.imageUrl); // ✅ sync live with Navbar
         setPreviewImage(null);
         setSelectedFile(null);
         alert("✅ Profile picture updated!");
