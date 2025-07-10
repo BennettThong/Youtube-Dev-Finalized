@@ -5,6 +5,8 @@ import useLocalStorage from "use-local-storage";
 import axios from "axios";
 
 const apiUrl = import.meta.env.VITE_API_URL; // ✅ dynamic backend URL
+  // ✅ Log inside the component
+  console.log("🚀 VITE_API_URL in browser:", apiUrl);
 
 export default function ProfilePage() {
   const [authToken, setAuthToken] = useLocalStorage("authToken", "");

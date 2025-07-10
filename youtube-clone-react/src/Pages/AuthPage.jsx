@@ -126,10 +126,10 @@ export default function AuthPage() {
         <Image src={loginImage} fluid />
       </Col>
       <Col sm={6} className="p-4">
-        <i className="bi bi-twitter" style={{ fontSize: 50, color: "dodgerblue" }}></i>
+        <i className="bi bi-youtube" style={{ fontSize: 50, color: "red" }}></i>
 
         <p className="mt-5" style={{ fontSize: 64 }}>Happening Now</p>
-        <h2 className="my-5" style={{ fontSize: 31 }}>Join Twitter today.</h2>
+        <h2 className="my-5" style={{ fontSize: 31 }}>Join Youtube today.</h2>
 
         <Col sm={5} className="d-grid gap-2">
           <Button className="rounded-pill" variant="outline-dark" onClick={handleGoogleLogin}>

@@ -15,9 +15,8 @@ export const apiUrl = import.meta.env.VITE_API_URL;
 const App = () => {
   const [token, setToken] = useLocalStorage("token", null);
   const [sidebar, setSidebar] = useState(true);
-  // ✅ Log inside the component
-  console.log("🚀 VITE_API_URL in browser:", apiUrl);
-  
+
+
   return (
     <AuthProvider>
 
