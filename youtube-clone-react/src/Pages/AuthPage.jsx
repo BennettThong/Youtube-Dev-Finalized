@@ -13,7 +13,7 @@ import {
   signInWithPopup,
 } from "firebase/auth";
 
-const apiUrl = import.meta.env.VITE_API_URL; // ✅ dynamic backend URL
+const apiUrl = import.meta.env.VITE_API_URL;
 
 export default function AuthPage() {
   const loginImage =
@@ -22,17 +22,18 @@ export default function AuthPage() {
   const [modalShow, setModalShow] = useState(null); // null | "Login" | "SignUp"
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [authToken, setAuthToken] = useLocalStorage("authToken", "");
+  const [backendAuthToken, setBackendAuthToken] = useLocalStorage("backendAuthToken", "");
   const auth = getAuth();
   const provider = new GoogleAuthProvider();
   const navigate = useNavigate();
   const { currentUser } = useContext(AuthContext);
 
+  // ✅ Automatically redirect if user is already logged in (JWT or Firebase)
   useEffect(() => {
-    if (authToken) {
+    if (currentUser) {
       navigate("/home");
     }
-  }, [authToken, navigate]);
+  }, [currentUser, navigate]);
 
   const handleGoogleLogin = async (e) => {
     e.preventDefault();
@@ -41,8 +42,7 @@ export default function AuthPage() {
       console.log("✅ Google login success", result.user);
 
       const token = await result.user.getIdToken();
-      localStorage.setItem("authToken", token);
-
+      localStorage.setItem("backendAuthToken", token); // Optional, helps unify handling
       navigate("/home");
     } catch (error) {
       console.error("❌ Google login error:", error.message);
@@ -52,37 +52,37 @@ export default function AuthPage() {
 
   const handleSignUp = async (e) => {
     e.preventDefault();
+
     try {
+      // Backend signup (username & password)
       const res = await axios.post(`${apiUrl}/signup`, {
         username,
         password,
       });
-      console.log("✅ Signup success:", res.data);
+      console.log("✅ Backend signup success:", res.data);
       alert("Account created successfully!");
     } catch (error) {
       if (error.response) {
-        console.error("❌ Signup failed:", error.response.data);
+        console.error("❌ Backend signup failed:", error.response.data);
         alert(error.response.data.error || "Signup failed");
-      } else if (error.request) {
-        console.error("❌ No response from server:", error.request);
-        alert("No response from the server. Check connection or backend.");
       } else {
-        console.error("❌ Signup error:", error.message);
-        alert("Unexpected error: " + error.message);
+        alert("Server error. Please try again.");
       }
     }
 
     try {
+      // Firebase signup as fallback (optional)
       const res = await createUserWithEmailAndPassword(auth, username, password);
-      console.log(res.user);
+      console.log("✅ Firebase signup success:", res.user);
     } catch (error) {
-      console.error(error);
+      console.error("❌ Firebase signup error:", error.message);
     }
   };
 
   const handleLogin = async (e) => {
     e.preventDefault();
 
+    // Attempt backend login first
     try {
       const res = await axios.post(`${apiUrl}/login`, {
         username,
@@ -99,17 +99,20 @@ export default function AuthPage() {
           console.warn("⚠️ Token could not be decoded:", decodeErr.message);
         }
 
+        navigate("/home");
         return;
       }
     } catch (error) {
       console.warn("⚠️ Backend login failed, trying Firebase...");
     }
 
+    // Firebase login fallback
     try {
       await signInWithEmailAndPassword(auth, username, password);
-      console.log("✅ Firebase login success");
       const token = await auth.currentUser.getIdToken();
-      setAuthToken(token);
+      localStorage.setItem("backendAuthToken", token); // Optional, unify with backend
+      console.log("✅ Firebase login success");
+      navigate("/home");
     } catch (firebaseErr) {
       console.error("❌ Firebase login failed:", firebaseErr.message);
       alert("Login failed with both methods. Check credentials.");
@@ -134,9 +137,6 @@ export default function AuthPage() {
         <Col sm={5} className="d-grid gap-2">
           <Button className="rounded-pill" variant="outline-dark" onClick={handleGoogleLogin}>
             <i className="bi bi-google"></i> Sign up with Google
-          </Button>
-          <Button className="rounded-pill" variant="outline-dark">
-            <i className="bi bi-apple"></i> Sign up with Apple
           </Button>
           <p style={{ textAlign: "center" }}>or</p>
           <Button className="rounded-pill" onClick={handleShowSignUp}>

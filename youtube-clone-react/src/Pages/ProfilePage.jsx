@@ -1,34 +1,45 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { Container, Row } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
-import useLocalStorage from "use-local-storage";
 import axios from "axios";
+import { AuthContext } from "../Components/AuthProvider"; // ✅ Use AuthContext
+import { getAuth, signOut } from "firebase/auth";
 
-const apiUrl = import.meta.env.VITE_API_URL; // ✅ dynamic backend URL
-  // ✅ Log inside the component
-  console.log("🚀 VITE_API_URL in browser:", apiUrl);
+const apiUrl = import.meta.env.VITE_API_URL;
 
 export default function ProfilePage() {
-  const [authToken, setAuthToken] = useLocalStorage("authToken", "");
+  const { currentUser, authSource } = useContext(AuthContext); // ✅ currentUser from context
   const navigate = useNavigate();
+
   const [image, setImage] = useState(
     "https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-profiles/avatar-1.webp"
   );
   const [previewImage, setPreviewImage] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
 
+  // ✅ Redirect if no authenticated user
   useEffect(() => {
-    if (!authToken) navigate("/login");
+    if (currentUser === null) {
+      navigate("/login");
+    }
 
     const storedUrl = localStorage.getItem("profileImage");
     if (storedUrl) {
       setImage(storedUrl);
     }
-  }, [authToken, navigate]);
+  }, [currentUser, navigate]);
 
-  const handleLogout = () => {
-    setAuthToken("");
+  // ✅ Logout both Firebase and backend
+  const handleLogout = async () => {
+    if (authSource === "firebase") {
+      const auth = getAuth();
+      await signOut(auth);
+    }
+
+    localStorage.removeItem("backendAuthToken");
     localStorage.removeItem("profileImage");
+
+    navigate("/login");
   };
 
   const handleImageSelect = (e) => {
@@ -47,8 +58,8 @@ export default function ProfilePage() {
     try {
       const res = await axios.post(`${apiUrl}/upload-profile`, formData, {
         headers: {
-          "Content-Type": "multipart/form-data"
-        }
+          "Content-Type": "multipart/form-data",
+        },
       });
 
       if (res.data && res.data.imageUrl) {
@@ -93,7 +104,7 @@ export default function ProfilePage() {
               height: "150px",
               borderRadius: "50%",
               objectFit: "cover",
-              border: "2px solid #ddd"
+              border: "2px solid #ddd",
             }}
           />
         </div>
@@ -123,7 +134,7 @@ export default function ProfilePage() {
         className="w-100 px-4 py-5"
         style={{
           backgroundColor: "#9de2ff",
-          borderRadius: ".5rem .5rem 0 0"
+          borderRadius: ".5rem .5rem 0 0",
         }}
       >
         <div className="row d-flex justify-content-center">
