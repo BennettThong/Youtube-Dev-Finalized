@@ -1,17 +1,24 @@
+.main-container {
+  display: flex;
+}
+
+/* Sidebar already has width 15% from Sidebar.css, no padding needed here */
 .container {
   background: #f9f9f9;
-  padding-left: 17%;
-  padding-right: 2%;
-  padding-top: 20px;
-  padding-bottom: 20px;
+  flex: 1;
+  padding: 20px;
+  margin-top: 80px; /* to avoid navbar overlap */
 }
+
+/* Optional for smaller sidebar mode */
 .large-container {
   padding-left: 7%;
 }
 
+/* Responsive tweak */
 @media (max-width: 900px) {
-  .large-container,
-  .container {
+  .container,
+  .large-container {
     padding-left: 5%;
     padding-right: 5%;
   }
