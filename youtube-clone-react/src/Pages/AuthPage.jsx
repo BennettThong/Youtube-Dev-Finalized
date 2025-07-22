@@ -22,7 +22,6 @@ export default function AuthPage() {
   const [modalShow, setModalShow] = useState(null); // null | "Login" | "SignUp"
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [backendAuthToken, setBackendAuthToken] = useLocalStorage("backendAuthToken", "");
   const auth = getAuth();
   const provider = new GoogleAuthProvider();
   const navigate = useNavigate();
@@ -90,7 +89,7 @@ export default function AuthPage() {
       });
 
       if (res.data?.auth && res.data?.token) {
-        setAuthToken(res.data.token);
+        localStorage.setItem("backendAuthToken", res.data.token);;
 
         try {
           const decoded = jwtDecode(res.data.token);

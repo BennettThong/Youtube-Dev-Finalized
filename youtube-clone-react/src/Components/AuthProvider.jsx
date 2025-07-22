@@ -7,8 +7,15 @@ export const AuthContext = createContext();
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [authSource, setAuthSource] = useState(null); // "firebase" | "jwt" | null
-  const [profileImage, setProfileImage] = useState(localStorage.getItem("profileImage") || ""); // ✅ store image globally
+  const [profileImage, setProfileImage] = useState(localStorage.getItem("profileImage") || "");
   const [loading, setLoading] = useState(true);
+
+  // ✅ Manual reset function to clear auth state (useful in logout)
+  const resetAuth = () => {
+    setCurrentUser(null);
+    setAuthSource(null);
+    localStorage.removeItem("backendAuthToken");
+  };
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
@@ -18,22 +25,23 @@ export function AuthProvider({ children }) {
       } else {
         const token = localStorage.getItem("backendAuthToken");
 
-        if (token) {
+        // ✅ Check for valid JWT format before decoding
+        if (token && token !== "null" && token.split(".").length === 3) {
           try {
-            if (token.split(".").length !== 3) {
-              throw new Error("Invalid JWT format");
-            }
-
             const decoded = jwtDecode(token);
             setCurrentUser(decoded);
             setAuthSource("jwt");
           } catch (err) {
-            console.warn("⚠️ Invalid token, clearing backendAuthToken:", err.message);
+            console.warn("⚠️ Failed to decode JWT:", err.message);
             localStorage.removeItem("backendAuthToken");
             setCurrentUser(null);
             setAuthSource(null);
           }
         } else {
+          if (token) {
+            console.warn("⚠️ Invalid token format, clearing backendAuthToken");
+            localStorage.removeItem("backendAuthToken");
+          }
           setCurrentUser(null);
           setAuthSource(null);
         }
@@ -50,8 +58,9 @@ export function AuthProvider({ children }) {
       value={{
         currentUser,
         authSource,
-        profileImage,     // ✅ global profile image
-        setProfileImage,  // ✅ setter for /profile page to update
+        profileImage,
+        setProfileImage,
+        resetAuth, // ✅ exposed to be used in ProfilePage or anywhere else
       }}
     >
       {!loading && children}

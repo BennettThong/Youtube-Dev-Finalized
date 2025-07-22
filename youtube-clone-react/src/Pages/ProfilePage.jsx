@@ -2,44 +2,44 @@ import React, { useEffect, useState, useContext } from "react";
 import { Container, Row } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { AuthContext } from "../Components/AuthProvider"; // ✅ Use AuthContext
+import { AuthContext } from "../Components/AuthProvider";
 import { getAuth, signOut } from "firebase/auth";
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
 export default function ProfilePage() {
-  const { currentUser, authSource, setProfileImage } = useContext(AuthContext); // ✅ Added setProfileImage
+  const { currentUser, authSource, setProfileImage, resetAuth } = useContext(AuthContext); // ✅ include resetAuth
   const navigate = useNavigate();
 
-  const [image, setImage] = useState(
-    "https://ui-avatars.com/api/?name=Bennett+Thong"
-  );
+  const [image, setImage] = useState("https://ui-avatars.com/api/?name=Bennett+Thong");
   const [previewImage, setPreviewImage] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
 
-  // ✅ Redirect if no authenticated user
+  // ✅ Load stored profile image
   useEffect(() => {
-    if (currentUser === null) {
-      navigate("/login");
-    }
-
     const storedUrl = localStorage.getItem("profileImage");
     if (storedUrl) {
       setImage(storedUrl);
     }
+  }, []);
+
+  // ✅ Redirect to login when user becomes null
+  useEffect(() => {
+    if (currentUser === null) {
+      navigate("/login", { replace: true });
+    }
   }, [currentUser, navigate]);
 
-  // ✅ Logout both Firebase and backend
+  // ✅ Logout with resetAuth to trigger redirect
   const handleLogout = async () => {
     if (authSource === "firebase") {
       const auth = getAuth();
       await signOut(auth);
     }
 
-    localStorage.removeItem("backendAuthToken");
     localStorage.removeItem("profileImage");
 
-    navigate("/login");
+    resetAuth(); // ✅ Force auth context update → triggers redirect
   };
 
   const handleImageSelect = (e) => {
@@ -52,23 +52,18 @@ export default function ProfilePage() {
   const handleConfirmUpload = async () => {
     if (!selectedFile) return;
 
-    console.log("📤 Selected file:", selectedFile);
-    console.log("📦 Uploading to:", `${apiUrl}/upload-profile`);
-
     const formData = new FormData();
     formData.append("image", selectedFile);
 
     try {
       const res = await axios.post(`${apiUrl}/upload-profile`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
-      if (res.data && res.data.imageUrl) {
+      if (res.data?.imageUrl) {
         setImage(res.data.imageUrl);
         localStorage.setItem("profileImage", res.data.imageUrl);
-        setProfileImage(res.data.imageUrl); // ✅ sync live with Navbar
+        setProfileImage(res.data.imageUrl);
         setPreviewImage(null);
         setSelectedFile(null);
         alert("✅ Profile picture updated!");
@@ -80,6 +75,8 @@ export default function ProfilePage() {
       alert("Image upload failed. Please try again.");
     }
   };
+
+  if (currentUser === null) return null;
 
   return (
     <>
