@@ -52,6 +52,9 @@ export default function ProfilePage() {
   const handleConfirmUpload = async () => {
     if (!selectedFile) return;
 
+    console.log("📤 Selected file:", selectedFile);
+    console.log("📦 Uploading to:", `${apiUrl}/upload-profile`);
+
     const formData = new FormData();
     formData.append("image", selectedFile);
 
