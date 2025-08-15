@@ -1,0 +1,32 @@
+/* increase specificity so it wins over Bootstrap */
+button.like-btn {
+  all: unset;                 /* wipe Bootstrap styles */
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 18px;
+  cursor: pointer;
+  color: #606060;
+  line-height: 1;
+}
+
+button.like-btn:hover {
+  background: rgba(0,0,0,0.05);
+}
+
+button.like-btn .like-icon {
+  width: 20px;
+  height: 20px;
+  fill: #909090 !important;   /* defeat Bootstrap color */
+}
+
+button.like-btn.liked .like-icon {
+  fill: #065fd4 !important;   /* YouTube blue */
+}
+
+button.like-btn .like-count {
+  font-size: 13px;
+  color: #606060;
+}
+    

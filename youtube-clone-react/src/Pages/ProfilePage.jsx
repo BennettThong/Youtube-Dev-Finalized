@@ -3,43 +3,43 @@ import { Container, Row } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { AuthContext } from "../Components/AuthProvider";
-import { getAuth, signOut } from "firebase/auth";
+import { getAuth, signOut, updateProfile } from "firebase/auth";
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
 export default function ProfilePage() {
-  const { currentUser, authSource, setProfileImage, resetAuth } = useContext(AuthContext); // ✅ include resetAuth
+  const { currentUser, authSource, setProfileImage, resetAuth } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [image, setImage] = useState("https://ui-avatars.com/api/?name=Bennett+Thong");
   const [previewImage, setPreviewImage] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
 
-  // ✅ Load stored profile image
+  // Hydrate avatar from durable source (Auth.photoURL)
   useEffect(() => {
-    const storedUrl = localStorage.getItem("profileImage");
-    if (storedUrl) {
-      setImage(storedUrl);
+    if (!currentUser) return;
+    const url = currentUser.photoURL || localStorage.getItem("profileImage");
+    if (url) {
+      setImage(url);
+      localStorage.setItem("profileImage", url); // optional cache
     }
-  }, []);
+  }, [currentUser]);
 
-  // ✅ Redirect to login when user becomes null
+  // Redirect to login when user becomes null
   useEffect(() => {
     if (currentUser === null) {
       navigate("/login", { replace: true });
     }
   }, [currentUser, navigate]);
 
-  // ✅ Logout with resetAuth to trigger redirect
+  // Logout and reset auth context
   const handleLogout = async () => {
     if (authSource === "firebase") {
       const auth = getAuth();
       await signOut(auth);
     }
-
     localStorage.removeItem("profileImage");
-
-    resetAuth(); // ✅ Force auth context update → triggers redirect
+    resetAuth();
   };
 
   const handleImageSelect = (e) => {
@@ -56,20 +56,37 @@ export default function ProfilePage() {
     formData.append("image", selectedFile);
 
     try {
+      const auth = getAuth();
+      const idToken = await auth.currentUser?.getIdToken?.();
+
       const res = await axios.post(`${apiUrl}/upload-profile`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: {
+          "Content-Type": "multipart/form-data",
+          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+        },
       });
 
-      if (res.data?.imageUrl) {
-        setImage(res.data.imageUrl);
-        localStorage.setItem("profileImage", res.data.imageUrl);
-        setProfileImage(res.data.imageUrl);
-        setPreviewImage(null);
-        setSelectedFile(null);
-        alert("✅ Profile picture updated!");
-      } else {
-        throw new Error("No imageUrl returned from backend.");
+      const url = res.data?.imageUrl;
+      if (!url) throw new Error("No imageUrl returned from backend.");
+
+      // Ensure Firebase Auth profile points to the new image
+      if (auth.currentUser) {
+        await updateProfile(auth.currentUser, { photoURL: url });
+        await auth.currentUser.reload(); // get the fresh photoURL
       }
+
+      const fresh = auth.currentUser?.photoURL || url;
+
+      // Update UI + any app-level state
+      setImage(fresh);
+      setProfileImage(fresh);
+      localStorage.setItem("profileImage", fresh);
+
+      // Reset preview state
+      setPreviewImage(null);
+      setSelectedFile(null);
+
+      alert("✅ Profile picture updated!");
     } catch (err) {
       console.error("❌ Upload failed:", err);
       alert("Image upload failed. Please try again.");
@@ -77,6 +94,9 @@ export default function ProfilePage() {
   };
 
   if (currentUser === null) return null;
+
+  const fallback =
+    "https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-profiles/avatar-1.webp";
 
   return (
     <>
@@ -96,9 +116,8 @@ export default function ProfilePage() {
             src={previewImage || image}
             alt="Profile"
             onError={(e) => {
-              e.target.onerror = null;
-              e.target.src =
-                "https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-profiles/avatar-1.webp";
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = fallback;
             }}
             style={{
               width: "150px",
@@ -149,9 +168,8 @@ export default function ProfilePage() {
                       alt="Uploaded"
                       className="img-fluid"
                       onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src =
-                          "https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-profiles/avatar-1.webp";
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = fallback;
                       }}
                       style={{ width: "180px", borderRadius: "10px" }}
                     />
