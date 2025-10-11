@@ -96,7 +96,7 @@ export default function ProfilePage() {
   if (currentUser === null) return null;
 
   const fallback =
-    "https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-profiles/avatar-1.webp";
+    "https://ui-avatars.com/api/?name=Bennett+Thong";
 
   return (
     <>
