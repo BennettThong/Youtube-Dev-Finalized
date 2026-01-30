@@ -7,6 +7,7 @@ import { useParams } from "react-router-dom";
 const Video = () => {
     const { videoId, categoryId } = useParams();
 
+
     if (!videoId) {
         return <div>Video ID not found in URL.</div>;
     }

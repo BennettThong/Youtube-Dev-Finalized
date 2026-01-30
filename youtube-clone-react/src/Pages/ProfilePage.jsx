@@ -175,7 +175,7 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div className="flex-grow-1 ms-3">
-                    <h5 className="mb-1">Bennett Thong</h5>
+                    <h5 className="mb-1">{currentUser?.displayName || "User"}</h5>
                     <p className="mb-2 pb-1">Full Stack Developer</p>
                     <div className="d-flex justify-content-start rounded-3 p-2 mb-2 bg-body-tertiary">
                       <div>

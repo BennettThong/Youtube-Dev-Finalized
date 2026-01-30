@@ -7,6 +7,7 @@ import AuthPage from "./Pages/AuthPage";
 import ProfilePage from "./Pages/ProfilePage";
 import { AuthProvider } from "./Components/AuthProvider";
 import PrivateRoute from "./PrivatedRoute";
+import SearchPage from "./Pages/SearchPage";
 
 export const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -45,8 +46,10 @@ const App = () => {
             </PrivateRoute>
           }
         />
+        <Route path="/search/:query" element={<SearchPage />} />
       </Routes>
     </AuthProvider>
+    
   );
 };
 
