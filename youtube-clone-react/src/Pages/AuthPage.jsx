@@ -17,16 +17,13 @@ export default function AuthPage() {
 
   useEffect(() => {
     if (currentUser) {
-      navigate("/home");
+      navigate("/home", { replace: true });
     }
   }, [currentUser, navigate]);
 
   const handleGoogleLogin = async () => {
     try {
-      const result = await signInWithPopup(auth, provider);
-      const token = await result.user.getIdToken();
-      localStorage.setItem("backendAuthToken", token);
-      navigate("/home");
+      await signInWithPopup(auth, provider);
     } catch (error) {
       console.error("Google login failed:", error.message);
       alert("Google login failed");

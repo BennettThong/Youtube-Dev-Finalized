@@ -1,114 +1,138 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+// src/Components/AuthProvider.jsx
+
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { auth } from "../firebase.js";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { jwtDecode } from "jwt-decode";
 
+
 export const AuthContext = createContext(null);
+
+const fallbackAvatar = "https://ui-avatars.com/api/?name=Bennett+Thong";
 
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [authSource, setAuthSource] = useState(null); // "firebase" | "jwt" | null
-  const [profileImage, setProfileImage] = useState(
-    typeof window !== "undefined" ? localStorage.getItem("profileImage") || "" : ""
-  );
-  const [loading, setLoading] = useState(true);
+  const [profileImage, setProfileImage] = useState(() => {
+    if (typeof window === "undefined") return fallbackAvatar;
 
-  // Change this if you want a different default avatar
-  const fallbackAvatar = "https://ui-avatars.com/api/?name=Bennett+Thong";
+    return localStorage.getItem("profileImage") || fallbackAvatar;
+  });
 
-  // ✅ Explicit, immediate cleanup for logout
   const resetAuth = ({ clearAvatar = true } = {}) => {
     setCurrentUser(null);
     setAuthSource(null);
+
     localStorage.removeItem("backendAuthToken");
+
     if (clearAvatar) {
       localStorage.removeItem("profileImage");
-      setProfileImage(fallbackAvatar); // instant UI swap to default
+      setProfileImage(fallbackAvatar);
     }
   };
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setAuthLoading(true);
+
       try {
         if (firebaseUser) {
-          // Keep profile fresh after uploads
-          try { await firebaseUser.reload(); } catch {}
+          try {
+            await firebaseUser.reload();
+          } catch (error) {
+            console.warn("Firebase user reload failed:", error);
+          }
+
+          const token = await firebaseUser.getIdToken();
+          localStorage.setItem("backendAuthToken", token);
 
           setCurrentUser(firebaseUser);
           setAuthSource("firebase");
 
           const url =
             firebaseUser.photoURL ||
-            localStorage.getItem("profileImage") ||
             firebaseUser.providerData?.[0]?.photoURL ||
+            localStorage.getItem("profileImage") ||
             fallbackAvatar;
 
           setProfileImage(url);
           localStorage.setItem("profileImage", url);
-        } else {
-          // Not signed into Firebase → try backend JWT, else clear to fallback
-          const token = localStorage.getItem("backendAuthToken");
-          if (token && token !== "null" && token.split(".").length === 3) {
-            try {
-              const decoded = jwtDecode(token);
-              setCurrentUser(decoded);
-              setAuthSource("jwt");
 
-              // Use avatar from JWT if present; otherwise fallback
-              const decodedAvatar =
-                (decoded && (decoded.photoURL || decoded.avatarUrl)) || null;
-              if (decodedAvatar) {
-                setProfileImage(decodedAvatar);
-                localStorage.setItem("profileImage", decodedAvatar);
-              } else {
-                setProfileImage(fallbackAvatar);
-              }
-            } catch {
-              localStorage.removeItem("backendAuthToken");
-              setCurrentUser(null);
-              setAuthSource(null);
-              setProfileImage(fallbackAvatar);
+          return;
+        }
+
+        const token = localStorage.getItem("backendAuthToken");
+
+        if (token && token !== "null" && token.split(".").length === 3) {
+          try {
+            const decoded = jwtDecode(token);
+
+            setCurrentUser(decoded);
+            setAuthSource("jwt");
+
+            const decodedAvatar =
+              decoded?.photoURL || decoded?.avatarUrl || fallbackAvatar;
+
+            setProfileImage(decodedAvatar);
+
+            if (decodedAvatar !== fallbackAvatar) {
+              localStorage.setItem("profileImage", decodedAvatar);
             }
-          } else {
-            setCurrentUser(null);
-            setAuthSource(null);
-            setProfileImage(fallbackAvatar); // ← don't keep last avatar while logged out
+
+            return;
+          } catch (error) {
+            console.warn("Invalid backend token:", error);
+            resetAuth({ clearAvatar: true });
+            return;
           }
         }
+
+        resetAuth({ clearAvatar: true });
       } finally {
-        setLoading(false);
+        setAuthLoading(false);
       }
     });
 
-    return () => unsub();
+    return () => unsubscribe();
   }, []);
 
-  // Helper to use in buttons: signs out from Firebase, then hard-resets UI
   const signOutFirebase = async () => {
+    setAuthLoading(true);
+
     try {
       await signOut(auth);
     } finally {
       resetAuth({ clearAvatar: true });
+      setAuthLoading(false);
     }
   };
 
   const value = useMemo(
     () => ({
       currentUser,
+      authLoading,
       authSource,
-      profileImage,     // ← read this in your navbar
-      setProfileImage,  // ← update after successful upload
+      profileImage,
+      setProfileImage,
       resetAuth,
       signOutFirebase,
+      isAuthenticated: !!currentUser,
     }),
-    [currentUser, authSource, profileImage]
+    [currentUser, authLoading, authSource, profileImage]
   );
 
-  return (
-    <AuthContext.Provider value={value}>
-      {!loading && children}
-    </AuthContext.Provider>
-  );
+  if (authLoading) {
+    return <p>Loading...</p>;
+  }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = () => useContext(AuthContext);
